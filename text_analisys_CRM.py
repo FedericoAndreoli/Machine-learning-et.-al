@@ -1,5 +1,6 @@
 from methods.text_analysis_methods import *
 import getopt
+import sys 
 
 def main():
     """
@@ -30,7 +31,7 @@ def main():
                 parallel = True
 
         if train:
-            train_classifiers(in_path, int_label, parallel)
+            train_classifiers(in_path, out_path, parallel)
         elif predict:
             predict_label(in_path)
 

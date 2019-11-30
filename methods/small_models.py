@@ -48,7 +48,7 @@ def create_embedding(train, valid):
 
     return embedding_matrix, vocab, train_data, test_data
 
-def conv_classification(train, valid, labels_train, labels_valid, num_classes):
+def conv_classification(train, valid, labels_train, labels_valid, save_path, num_classes, num_epochs=10):
 
     train_lab = labels_for_NN(labels_train)
     EMBEDDING_DIM = 300
@@ -66,23 +66,17 @@ def conv_classification(train, valid, labels_train, labels_valid, num_classes):
 
     # NB binary classification -->binary_crossentropy, Multi-class classification --> categorical_crossentropy
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    history = model.fit(train_we, np.array(train_lab), validation_split=0.2, epochs=5, batch_size=batch_size)
+    history = model.fit(train_we, np.array(train_lab), validation_split=0.2, epochs=num_epochs, batch_size=batch_size)
     utils.plot_history(history)
-
-    # SE LA MATRICE TFIDF NON VA BENE O I BAG OF WORDS NON VANNO BENE ALLORA USO QUESTO
-    # tokenizer = Tokenizer(num_words=VOCAB_SIZE)
-    # sequences = tokenizer.texts_to_sequences(valid)
-    # data_test = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
-    # list_prediction_proba = model.predict(data_test)
 
     list_prediction_proba = model.predict(test_we)
 
     predizione = [np.where(probabilities == probabilities.max())[0].min() for probabilities in list_prediction_proba]
 
-    utils.report_and_confmat(labels_train, labels_valid, predizione, "TINY_conv_1_layer" + str(EMBEDDING_DIM))
+    utils.report_and_confmat(labels_train, labels_valid, predizione, save_path, "TINY_conv_1_layer" + str(EMBEDDING_DIM))
 
 
-def bi_lstm_classification(train, valid, labels_train, labels_valid, num_classes):
+def bi_lstm_classification(train, valid, labels_train, labels_valid, save_path, num_classes, num_epochs=10):
 
     train_lab = labels_for_NN(labels_train)
 
@@ -99,23 +93,17 @@ def bi_lstm_classification(train, valid, labels_train, labels_valid, num_classes
     model.add(Dense(num_classes, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     ## Fit train data
-    history = model.fit(train_we, np.array(train_lab), validation_split=0.2, epochs=3, batch_size=batch_size)
+    history = model.fit(train_we, np.array(train_lab), validation_split=0.2, epochs=num_epochs, batch_size=batch_size)
     utils.plot_history(history)
-
-    # SE LA MATRICE TFIDF NON VA BENE O I BAG OF WORDS NON VANNO BENE ALLORA USO QUESTO
-    # tokenizer = Tokenizer(num_words=VOCAB_SIZE)
-    # sequences = tokenizer.texts_to_sequences(valid)
-    # data_test = pad_sequences(sequences, maxlen=MAX_SEQUENCE_LENGTH)
-    # list_prediction_proba = model.predict(data_test)
 
     list_prediction_proba = model.predict(test_we)
 
     predizione = [np.where(probabilities == probabilities.max())[0].min() for probabilities in list_prediction_proba]
 
-    utils.report_and_confmat(labels_train, labels_valid, predizione, "TINY_bilstm" + str(EMBEDDING_DIM))
+    utils.report_and_confmat(labels_train, labels_valid, predizione, save_path, "TINY_bilstm" + str(EMBEDDING_DIM))
 
 
-def lstm_classification(train, valid, labels_train, labels_valid, num_classes):
+def lstm_classification(train, valid, labels_train, labels_valid, save_path, num_classes, num_epochs=10):
 
     train_lab = labels_for_NN(labels_train)
     EMBEDDING_DIM = 300
@@ -131,7 +119,7 @@ def lstm_classification(train, valid, labels_train, labels_valid, num_classes):
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     ## Fit train data
-    history = model.fit(train_we, np.array(train_lab), validation_split=0.2, epochs=3, batch_size=batch_size)
+    history = model.fit(train_we, np.array(train_lab), validation_split=0.2, epochs=num_epochs, batch_size=batch_size)
     utils.plot_history(history)
 
     # SE LA MATRICE TFIDF NON VA BENE O I BAG OF WORDS NON VANNO BENE ALLORA USO QUESTO
@@ -144,4 +132,4 @@ def lstm_classification(train, valid, labels_train, labels_valid, num_classes):
 
     predizione = [np.where(probabilities == probabilities.max())[0].min() for probabilities in list_prediction_proba]
 
-    utils.report_and_confmat(labels_train, labels_valid, predizione, "TINY_lstm_" + str(EMBEDDING_DIM))
+    utils.report_and_confmat(labels_train, labels_valid, predizione, save_path, "TINY_lstm_" + str(EMBEDDING_DIM))

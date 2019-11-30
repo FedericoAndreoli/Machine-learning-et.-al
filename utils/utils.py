@@ -264,7 +264,7 @@ def visualize_tfidf_keywords(sentences, vectorizer, title=None, word_cloud=False
         plt.show()
 
 
-def report_and_confmat(train_labels, test_labels, prediction, title="generic", save_data=False):
+def report_and_confmat(train_labels, test_labels, prediction, save_path, title="generic"):
 
     ytest = np.array(test_labels)
 
@@ -274,13 +274,8 @@ def report_and_confmat(train_labels, test_labels, prediction, title="generic", s
     print(report)
     conf_mat = confusion_matrix(ytest, prediction)
     print(conf_mat)
-    save_dir = os.path.join(os.getcwd(), "Results")
 
-    if save_data:
-        save_npz = os.path.join(save_dir, title + "_arrays")
-        np.savez(save_npz, ground_truth=test_labels, prediction=prediction)
-
-    with open(os.path.join(save_dir, title + " results.txt"), "w") as file:
+    with open(os.path.join(save_path, title + " results.txt"), "w") as file:
         file.write(report)
         file.write("\nConfusion matrix:\n")
         file.write(str(conf_mat))

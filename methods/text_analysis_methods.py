@@ -5,11 +5,12 @@ from sklearn.svm import SVC, LinearSVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier as Knn
 from sklearn.feature_extraction.text import TfidfVectorizer
-from utilities.db_handler import *
+from utils import utils
 from word_embeddings import create_word_embedding
-import pickle as pkl
-from utilities.utils import *
+from nltk.corpus import stopwords
+import threading
 from multiprocessing import Process, Manager
+import pickle as pkl
 import json
 import os
 import numpy as np
@@ -30,10 +31,10 @@ def random_forest_classification(train, test, train_labels, test_labels, res={})
     rand.fit(train, train_labels)
 
     prediction = rand.predict(test)
-    report_and_confmat(test_labels, prediction, "Random Forest")
+    utils.report_and_confmat(test_labels, prediction, "Random Forest")
     score = rand.score(test, test_labels)
 
-    res["RandomForestClassifier"] = {"parameters": rand.get_params(), "accuracy": score, "name": "RandomForestClassifier"}
+    res["RandomForestClassifier"] = {"model": rand, "accuracy": score, "name": "RandomForestClassifier"}
     print("RandomForset ended...")
     return score, rand
 
@@ -53,10 +54,10 @@ def SVC_classification(train, test, train_labels, test_labels, res={}):
     svc.fit(train, train_labels)
 
     prediction = svc.predict(test)
-    report_and_confmat(test_labels, prediction, "SVC")
+    utils.report_and_confmat(test_labels, prediction, "SVC")
     score = svc.score(test, test_labels)
 
-    res["SVC"] = {"parameters": svc.get_params(), "accuracy": score, "name": "SVC"}
+    res["SVC"] = {"model": svc, "accuracy": score, "name": "SVC"}
     print("SVC ended...")
     return score, svc
 
@@ -76,10 +77,10 @@ def LinearSVC_classification(train, test, train_labels, test_labels, res={}):
     linear_svc.fit(train, train_labels)
 
     prediction = linear_svc.predict(test)
-    report_and_confmat(test_labels, prediction, "LinearSVC")
+    utils.report_and_confmat(test_labels, prediction, "LinearSVC")
     score = linear_svc.score(test, test_labels)
 
-    res["LinearSVC"] = {"parameters": linear_svc.get_params(), "accuracy": score, "name": "LinearSVC"}
+    res["LinearSVC"] = {"model": linear_svc, "accuracy": score, "name": "LinearSVC"}
     print("LinearSVC ended...")
     return score, linear_svc
 
@@ -97,10 +98,10 @@ def MultinomialNB_classification(train, test, train_labels, test_labels, res={})
     multiNB.fit(train, train_labels)
 
     prediction = multiNB.predict(test)
-    report_and_confmat(test_labels, prediction, "MultinomialNB")
+    utils.report_and_confmat(test_labels, prediction, "MultinomialNB")
     score = multiNB.score(test, test_labels)
 
-    res["MultinomialNB"] = {"parameters": multiNB.get_params(), "accuracy": score, "name": "MultinomialNB"}
+    res["MultinomialNB"] = {"model": multiNB, "accuracy": score, "name": "MultinomialNB"}
     print("Multinomial ended...")
     return score, multiNB
 
@@ -120,10 +121,10 @@ def ComplementNB_classification(train, test, train_labels, test_labels, res={}):
     complNB.fit(train, train_labels)
 
     prediction = complNB.predict(test)
-    report_and_confmat(test_labels, prediction, "ComplementNB")
+    utils.report_and_confmat(test_labels, prediction, "ComplementNB")
     score = complNB.score(test, test_labels)
 
-    res["ComplementNB"] = {"parameters": complNB.get_params(), "accuracy": score, "name": "ComplementNB"}
+    res["ComplementNB"] = {"model": complNB, "accuracy": score, "name": "ComplementNB"}
     print("Complement ended...")
     return score, complNB
 
@@ -143,9 +144,9 @@ def BernoulliNB_classification(train, test, train_labels, test_labels, res={}):
     bernNB.fit(train, train_labels)
 
     prediction = bernNB.predict(test)
-    report_and_confmat(test_labels, prediction, "BernoulliNB")
+    utils.report_and_confmat(test_labels, prediction, "BernoulliNB")
     score = bernNB.score(test, test_labels)
-    res["BernoulliNB"] = {"parameters": bernNB.get_params(), "accuracy": score, "name": "BernoulliNB"}
+    res["BernoulliNB"] = {"model": bernNB, "accuracy": score, "name": "BernoulliNB"}
     print("Bernoulli ended...")
 
     return score, bernNB
@@ -166,9 +167,9 @@ def GradientBoosting_classification(train, test, train_labels, test_labels, res=
     gradb.fit(train, train_labels)
 
     prediction = gradb.predict(test)
-    report_and_confmat(test_labels, prediction, "GradientBoosting")
+    utils.report_and_confmat(test_labels, prediction, "GradientBoosting")
     score = gradb.score(test, test_labels)
-    res["GradientBoostingClassifier"] = {"parameters": gradb.get_params(), "accuracy": score, "name": "GradientBoostingClassifier"}
+    res["GradientBoostingClassifier"] = {"model": gradb, "accuracy": score, "name": "GradientBoostingClassifier"}
     print("GradientBoosting ended...")
 
     return score, gradb
@@ -192,10 +193,10 @@ def AdaBoost_classification(train, test, train_labels, test_labels, res={}):
     adab.fit(train, train_labels)
 
     prediction = adab.predict(test)
-    report_and_confmat(test_labels, prediction, "AdaBoost")
+    utils.report_and_confmat(test_labels, prediction, "AdaBoost")
     score = adab.score(test, test_labels)
     print("Adaboost ended...")
-    res["AdaBoostClassifier"] = {"parameters": adab.get_params(), "accuracy": score, "name": "AdaBoostClassifier"}
+    res["AdaBoostClassifier"] = {"model": adab, "accuracy": score, "name": "AdaBoostClassifier"}
 
     return score, adab
 
@@ -225,10 +226,10 @@ def VotingClassifier_classification(train, test, train_labels, test_labels, res=
     vote.fit(train, train_labels)
 
     prediction = vote.predict(test)
-    report_and_confmat(test_labels, prediction, "VotingClass")
+    utils.report_and_confmat(test_labels, prediction, "VotingClass")
     score = vote.score(test, test_labels)
     print("Voting ended...")
-    res["VotingClassifier"] = {"parameters": vote.get_params(), "accuracy": score, "name": "VotingClassifier"}
+    res["VotingClassifier"] = {"model": vote, "accuracy": score, "name": "VotingClassifier"}
 
     return score, vote
 
@@ -250,10 +251,10 @@ def LogisticRegression_classification(train, test, train_labels, test_labels, re
     reg.fit(train, train_labels)
 
     prediction = reg.predict(test)
-    report_and_confmat(test_labels, prediction, "LogisticReg")
+    utils.report_and_confmat(test_labels, prediction, "LogisticReg")
     score = reg.score(test, test_labels)
 
-    res["LogisticRegression"] = {"parameters": reg.get_params(), "accuracy": score, "name": "LogisticRegression"}
+    res["LogisticRegression"] = {"model": reg, "accuracy": score, "name": "LogisticRegression"}
     print("Logistic Regression ended...")
     return score, reg
 
@@ -273,10 +274,10 @@ def ExtrExtraTrees_classification(train, test, train_labels, test_labels, res={}
     extra.fit(train, train_labels)
     prediction = extra.predict(test)
 
-    report_and_confmat(test_labels, prediction, "ExtraTrees")
+    utils.report_and_confmat(test_labels, prediction, "ExtraTrees")
     score = extra.score(test, test_labels)
 
-    res["ExtraTrees"] = {"parameters": extra.get_params(), "accuracy": score, "name": "ExtraTreesClassifier"}
+    res["ExtraTrees"] = {"model": extra, "accuracy": score, "name": "ExtraTreesClassifier"}
     print("ExtraTrees ended...")
     return score, extra
 
@@ -361,7 +362,7 @@ def classifiers_pipeline(train_bow, test_bow, label_train, label_test, save_path
         best = extraTree_score
         best_model = extraTree_model
 
-    data = {"parameters": best_model.get_params(), "accuracy": best, "name": name}
+    data = {"model": best_model, "accuracy": best, "name": name}
     model_name = name + "_parameters.json"
     save_dir = os.path.join(save_path, model_name)
     try:
@@ -372,7 +373,16 @@ def classifiers_pipeline(train_bow, test_bow, label_train, label_test, save_path
 
 
 def parallel_pipeline(train_bow, test_bow, label_train, label_test, save_path):
-    import threading
+    '''
+    Train all the classifiers using Threading in order to reduce execution time.
+    :param train_bow: training BagOfWords, iterable/list
+    :param test_bow: testing BagOfWords, iterable/list
+    :param label_train: training labels, iterable/list
+    :param label_test: testing labels, iterable/list
+    :param save_path: (fixed to Models directory)
+    :return: /
+    '''
+
     manager = Manager()
     return_dict = manager.dict()
 
@@ -397,9 +407,9 @@ def parallel_pipeline(train_bow, test_bow, label_train, label_test, save_path):
         if dict["accuracy"] > best:
             best = dict["accuracy"]
             name = dict["name"]
-            model_parameters = dict["parameters"]
+            model_parameters = dict["model"]
 
-    data = {"parameters": model_parameters, "accuracy": best, "name": name}
+    data = {"model": model_parameters, "accuracy": best, "name": name}
     filename = os.path.join(save_path, name + "_data.pkl")
     with open(filename, "wb") as pklfile:
         pkl.dump(data, pklfile)
@@ -412,11 +422,11 @@ def train_classifiers(data_path, save_path, multithreading, lang='eng'):
     dataframe = dataframe.dropna()
 
     print("Cleaning text...", end="")
-    dataframe['text'] = dataframe['text'].map(lambda x: clean_text(x, lang))
+    dataframe['text'] = dataframe['text'].map(lambda x: utils.clean_text(x, lang))
     print("Done")
 
     #Train test split
-    train, test, label_train, label_test = create_train_test(dataframe["text"], dataframe["label"])
+    train, test, label_train, label_test = utils.create_train_test(dataframe["text"], dataframe["label"])
 
     # TFIDF Bag Of Words extraction. Theese lines extract the features from text based on word frequencies among
     # texts
@@ -454,7 +464,7 @@ def predict_label(data_path):
             if "data.pkl" in fname:
                 with open(fname, "rb") as file:
                     model_dict = pkl.load(file)
-                    model_param = model_dict["parameters"]
+                    model_param = model_dict["model"]
                     model_name = model_dict["name"]
                     # Se non può ritornare la confidenza delle classi uso l'accuratezza come indice
                     confidence = model_dict["accuracy"]
@@ -496,10 +506,6 @@ def predict_label(data_path):
         result["prediction"] = prediction
         result["score"] = scores
         to_write = json.dumps(result)
-
-        # save_predictions_in_db(ticket_id, prediction)
-
-        save_predictions_in_db(ticket_id, to_write)
 
     except RuntimeError as e:
         print("Error when making prediction")
